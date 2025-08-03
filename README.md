@@ -2,103 +2,121 @@
 
 A production-ready, memory-efficient Retrieval-Augmented Generation (RAG) system for biomedical question answering. This project leverages state-of-the-art LLMs, advanced semantic search, and privacy-aware filtering, and is fully Dockerized for easy deployment on cloud or local environments.
 
-🚀 Quick Start
-Prerequisites
-Docker installed
-At least 8GB RAM 
-(Optional) NVIDIA GPU with CUDA support for faster inference
-(Optional) Hugging Face account for gated models
+---
 
-Docker Deployment
+## 🚀 Quick Start
 
-Build the Docker image:
+### Prerequisites
 
-docker build -t rag-chatbot .
+- Docker installed 
+- At least 8GB RAM
+- (Optional) NVIDIA GPU with CUDA support for faster inference
+- (Optional) Hugging Face account for gated models
 
+### Docker Deployment
 
-Run the container:
+1. **Build the Docker image:**
+   ```bash
+   docker build -t rag-chatbot .
+   ```
 
-docker run -p 5000:5000 rag-chatbot
+2. **Run the container:**
+   ```bash
+   docker run -p 5000:5000 rag-chatbot
+   ```
 
+3. **With Hugging Face token (for enhanced models):**
+   ```bash
+   docker run -p 5000:5000 -e HUGGINGFACE_HUB_TOKEN=your_token_here rag-chatbot
+   ```
 
-With Hugging Face token (for enhanced models):
+4. **Check health status:**
+   ```bash
+   curl http://localhost:5000/health
+   ```
 
-docker run -p 5000:5000 -e HUGGINGFACE_HUB_TOKEN=your_token_here rag-chatbot
+---
 
+## 📋 API Endpoints
 
-Check health status:
+- **Health Check:**  
+  `GET /health`  
+  Returns system status and model loading information.
 
-curl http://localhost:5000/health
+- **Predict (Main Endpoint):**  
+  `POST /predict`  
+  Content-Type: `application/json`  
+  ```json
+  {
+    "query": "What is diabetes?"
+  }
+  ```
+  **Response Example:**
+  ```json
+  {
+    "response": "Generated medical response",
+    "confidence": 0.85,
+    "query": "What is diabetes?",
+    "timestamp": "2024-01-15T10:30:00",
+    "context_check": "passed",
+    "model_used": "TinyLlama",
+    "rewritten_query": "diabetes mellitus blood glucose insulin",
+    "passages_found": 3
+  }
+  ```
 
-📋 API Endpoints
+- **Model Information:**  
+  `GET /info`  
+  Returns detailed model specifications and system information.
 
-Health Check:
-GET /health
-Returns system status and model loading information.
+---
 
-Predict (Main Endpoint):
-POST /predict
-Content-Type: application/json
+## 🏗️ Architecture
 
-{
-  "query": "What is diabetes?"
-}
+- **Embedder:** `sentence-transformers/all-MiniLM-L6-v2`
+- **Query Rewriter:** `google/gemma-2-2b-it` (4-bit quantized)
+- **Answer Generator:** `TinyLlama/TinyLlama-1.1B-Chat-v1.0`
+- **Vector Store:** FAISS index with 27,975 medical passages
+- **Fallback Models:** DistilGPT2, T5-small
 
+**Memory Optimizations:**
+- 4-bit quantization (BitsAndBytes)
+- Lazy model loading
+- GPU memory management (if available)
+- Efficient passage retrieval
 
-Response Example:
+---
 
-{
-  "response": "Generated medical response",
-  "confidence": 0.85,
-  "query": "What is diabetes?",
-  "timestamp": "2024-01-15T10:30:00",
-  "context_check": "passed",
-  "model_used": "TinyLlama",
-  "rewritten_query": "diabetes mellitus blood glucose insulin",
-  "passages_found": 3
-}
+## 🔒 Privacy & Security
 
+- **Named Entity Recognition (NER):**  
+  Automatically detects and blocks questions seeking personal or sensitive information.
+- **Out-of-Context Filtering:**  
+  Ensures only medical/health-related queries are answered.
+- **Answer Truncation:**  
+  Returns only the most relevant, concise response for each query.
 
-Model Information:
-GET /info
-Returns detailed model specifications and system information.
+---
 
-🏗️ Architecture
-Embedder: sentence-transformers/all-MiniLM-L6-v2
-Query Rewriter: google/gemma-2-2b-it (4-bit quantized)
-Answer Generator: TinyLlama/TinyLlama-1.1B-Chat-v1.0
-Vector Store: FAISS index with 27,975 medical passages
-Fallback Models: DistilGPT2, T5-small
+## 📊 Performance
 
-Memory Optimizations:
+- **Response Time:** ~25 seconds (average)
+- **Memory Usage:** ~3-4GB RAM
+- **GPU Usage:** Optional, improves speed
+- **Concurrent Users:** Limited by available memory
+- **Model Size:** ~2GB compressed
 
-4-bit quantization (BitsAndBytes)
-Lazy model loading
-GPU memory management (if available)
-Efficient passage retrieval
-🔒 Privacy & Security
-Named Entity Recognition (NER):
-Automatically detects and blocks questions seeking personal or sensitive information.
-Out-of-Context Filtering:
-Ensures only medical/health-related queries are answered.
-Answer Truncation:
-Returns only the most relevant, concise response for each query.
+**Evaluation Metrics:**
+- ROUGE-L (0.23)
+- BERT-F1 (85%)
+- MRR (75%)
+- MAP (73%)
 
-📊 Performance
-Response Time: ~25 seconds (average)
-Memory Usage: ~3-4GB RAM
-GPU Usage: Optional, improves speed
-Concurrent Users: Limited by available memory
-Model Size: ~2GB compressed
+---
 
-Evaluation Metrics:
+## 📁 Project Structure
 
-ROUGE-L (0.23)
-BERT-F1 (85%)
-MRR (75%)
-MAP (73%)
-
-📁 Project Structure
+```
 RAG_SYSTEM_CHECKPOINT/
 ├── app.py                          # Flask API server
 ├── chatbot.py                      # Main RAG logic
@@ -112,25 +130,29 @@ RAG_SYSTEM_CHECKPOINT/
     ├── passage_ids.pkl
     ├── bioasq_faiss_index.index
     └── system_config.json
+```
 
-🔧 Configuration
+---
 
-Environment Variables:
+## 🔧 Configuration
 
-HUGGINGFACE_HUB_TOKEN: Hugging Face token for gated models
-FLASK_ENV: Set to 'development' for debug mode
-PORT: Custom port (default: 5000)
+- **Environment Variables:**
+  - `HUGGINGFACE_HUB_TOKEN`: Hugging Face token for gated models
+  - `FLASK_ENV`: Set to 'development' for debug mode
+  - `PORT`: Custom port (default: 5000)
 
-Model Configuration:
-Edit system_config.json to modify:
+- **Model Configuration:**  
+  Edit `system_config.json` to modify:
+  - Model parameters (temperature, max_tokens)
+  - Medical keyword filtering
+  - Retrieval settings
 
-Model parameters (temperature, max_tokens)
-Medical keyword filtering
-Retrieval settings
-🧪 Testing
+---
 
-Local Testing Example:
+## 🧪 Testing
 
+**Local Testing Example:**
+```python
 import requests
 
 # Test health
@@ -141,69 +163,94 @@ print(response.json())
 response = requests.post('http://localhost:5000/predict', 
                         json={'query': 'What is diabetes?'})
 print(response.json())
+```
 
-
-Docker Testing:
-
+**Docker Testing:**
+```bash
 docker exec <container_id> curl http://localhost:5000/health
 docker logs <container_id>
+```
 
-🐳 Docker Commands
-Build with custom tag:
-docker build -t my-rag-system:v1.0 .
+---
 
-Run with custom configuration:
-docker run -p 5000:5000 \
-  -e HUGGINGFACE_HUB_TOKEN=your_token \
-  -e FLASK_ENV=production \
-  -v $(pwd)/logs:/app/logs \
-  rag-chatbot
+## 🐳 Docker Commands
 
-Save Docker image:
-docker save rag-chatbot > rag-chatbot.tar
+- **Build with custom tag:**
+  ```bash
+  docker build -t my-rag-system:v1.0 .
+  ```
+- **Run with custom configuration:**
+  ```bash
+  docker run -p 5000:5000 \
+    -e HUGGINGFACE_HUB_TOKEN=your_token \
+    -e FLASK_ENV=production \
+    -v $(pwd)/logs:/app/logs \
+    rag-chatbot
+  ```
+- **Save Docker image:**
+  ```bash
+  docker save rag-chatbot > rag-chatbot.tar
+  ```
+- **Load Docker image:**
+  ```bash
+  docker load < rag-chatbot.tar
+  ```
 
-Load Docker image:
-docker load < rag-chatbot.tar
+---
 
-🚨 Troubleshooting
-Out of Memory Error:
-Increase Docker memory allocation:
-docker run -m 8g -p 5000:5000 rag-chatbot
-Model Loading Timeout:
-Check logs for progress:
-docker logs -f <container_id>
-CUDA Errors (GPU):
-Run in CPU-only mode:
-docker run -e CUDA_VISIBLE_DEVICES="" -p 5000:5000 rag-chatbot
-Health Check Failures:
-Wait 2-3 minutes for model loading, check logs, and verify memory allocation.
+## 🚨 Troubleshooting
 
+- **Out of Memory Error:**  
+  Increase Docker memory allocation:  
+  `docker run -m 8g -p 5000:5000 rag-chatbot`
+- **Model Loading Timeout:**  
+  Check logs for progress:  
+  `docker logs -f <container_id>`
+- **CUDA Errors (GPU):**  
+  Run in CPU-only mode:  
+  `docker run -e CUDA_VISIBLE_DEVICES="" -p 5000:5000 rag-chatbot`
+- **Health Check Failures:**  
+  Wait 2-3 minutes for model loading, check logs, and verify memory allocation.
 
-📝 Development
+---
 
-Adding New Models:
+## 📝 Development
 
-Update chatbot.py model loading section
-Modify system_config.json parameters
-Update model-info.json specifications
-Rebuild Docker image
+- **Adding New Models:**
+  1. Update `chatbot.py` model loading section
+  2. Modify `system_config.json` parameters
+  3. Update `model-info.json` specifications
+  4. Rebuild Docker image
 
-Custom Data:
+- **Custom Data:**
+  1. Replace files in `rag_system_checkpoint/`
+  2. Update passage counts in config files
+  3. Rebuild FAISS index if needed
 
-Replace files in rag_system_checkpoint/
-Update passage counts in config files
-Rebuild FAISS index if needed
+---
 
+## 🤝 Assignment Requirements Compliance
 
+- ✅ **Dockerized Model:** Complete Docker setup with exposed port 5000  
+- ✅ **Health Endpoint:** `/health` returns system status  
+- ✅ **Predict Endpoint:** `/predict` accepts JSON and returns confidence  
+- ✅ **Documentation:** Comprehensive README.md  
+- ✅ **Model Info:** Detailed model-info.json with specifications  
+- ✅ **Best Practices:** Structured code, error handling, logging  
 
-📣 Support
+---
+
+## 📣 Support
 
 For issues or questions:
+1. Check Docker logs: `docker logs <container_id>`
+2. Verify system requirements (RAM, Docker version)
+3. Test API endpoints manually with curl
+4. Review this README for troubleshooting steps
 
-Check Docker logs: docker logs <container_id>
-Verify system requirements (RAM, Docker version)
-Test API endpoints manually with curl
-Review this README for troubleshooting steps
 
-Built with ❤️ by Subhash.
+**Built with ❤️ by Subhash**
 
+---
+
+Let me know if you want to add badges, a demo GIF, or further customize any section!
